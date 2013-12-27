@@ -20,12 +20,12 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 
 public class MainActivity extends Activity {
-	protected Camera mCamera;
+	protected Camera mCamera = null;
 	private CameraPreview mPreview;
 	protected String TAG = "main activity";
 	public static final int MEDIA_TYPE_IMAGE = 1;
 	protected Boolean preview_active;
-
+	protected int cameraID = Camera.CameraInfo.CAMERA_FACING_FRONT;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -36,25 +36,29 @@ public class MainActivity extends Activity {
 
 		setContentView(R.layout.activity_main);
 
-		cameraInit();
-
-		FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
-		preview.addView(mPreview);
-
 		setPictureButton();
+		setCameraSwapButton();
 	}
 
-	public void cameraInit() {
+	@Override
+	protected void onResume() {
+		super.onResume();
+		cameraInit(cameraID);
+		FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
+		preview.addView(mPreview);
+	}
+	
+	public void cameraInit(int camID) {
+		
+		mCamera = getCameraInstance(camID);
+		cameraID = camID;
+		
+		// Create our Preview view and set it as the content of our
+		// activity.
+		mPreview = new CameraPreview(this, mCamera);
+		preview_active = true;
+		Log.i(TAG, "preview initilized");
 
-		if (mCamera == null) {
-			mCamera = getCameraInstance();
-
-			// Create our Preview view and set it as the content of our
-			// activity.
-			mPreview = new CameraPreview(this, mCamera);
-			preview_active = true;
-			Log.i(TAG, "preview initilized");
-		}
 	}
 
 	@Override
@@ -70,31 +74,52 @@ public class MainActivity extends Activity {
 		captureButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if (preview_active){
-				// get an image from the camera
-				mCamera.takePicture(null, null, mPicture);
-				preview_active = false;
-				}
-				else {
-				mCamera.stopPreview();
-				mCamera.startPreview();
-				preview_active = true;
+				if (preview_active) {
+					// get an image from the camera
+					mCamera.takePicture(null, null, mPicture);
+					preview_active = false;
+				} else {
+					mCamera.stopPreview();
+					mCamera.startPreview();
+					preview_active = true;
 				}
 			}
 		});
 	}
 
+	public void setCameraSwapButton() {
+		// Add a listener to the Capture button
+		Button captureButton = (Button) findViewById(R.id.button_swap);
+		captureButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
+				preview.removeView(mPreview);
+
+				if (cameraID == Camera.CameraInfo.CAMERA_FACING_BACK) {
+					// switch to front facing camera
+					cameraInit(Camera.CameraInfo.CAMERA_FACING_FRONT);
+				} else {
+					// switch to back facing camera
+					cameraInit(Camera.CameraInfo.CAMERA_FACING_BACK);
+				}
+				preview.addView(mPreview);
+			}
+		});
+	}
+
 	/** A safe way to get an instance of the Camera object. */
-	public static Camera getCameraInstance() {
+	public static Camera getCameraInstance(int camID) {
 		Camera c = null;
 		try {
-			c = Camera.open(0); // attempt to get a Camera instance
+			c = Camera.open(camID); // attempt to get a Camera instance
 			Log.i("camera util", "camera opened");
 		} catch (Exception e) {
 			// Camera is not available (in use or does not exist)
 			Log.e("camera init", "camera unavailable");
 			return null;
 		}
+
 		return c; // returns null if camera is unavailable
 	}
 
@@ -104,11 +129,6 @@ public class MainActivity extends Activity {
 		// surfaceDestroyed in CameraPreview is automatically called here
 	}
 
-	@Override
-	protected void onResume() {
-		super.onResume();
-		cameraInit();
-	}
 
 	private void releaseCamera() {
 		if (mCamera != null) {

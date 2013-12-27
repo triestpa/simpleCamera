@@ -42,12 +42,16 @@ public class CameraPreview extends SurfaceView implements
 	public void surfaceCreated(SurfaceHolder holder) {
 		// The Surface has been created, now tell the camera where to draw the
 		// preview.
+		if (mCamera == null)
+			Log.e(TAG, "camera is null");
+		
 		try {
 			mCamera.setPreviewDisplay(holder);
 			mCamera.startPreview();
 		} catch (IOException e) {
 			Log.d(TAG, "Error setting camera preview: " + e.getMessage());
 		}
+		Log.i(TAG, "surface created");
 	}
 
 	public void surfaceDestroyed(SurfaceHolder holder) {
@@ -57,6 +61,7 @@ public class CameraPreview extends SurfaceView implements
 			// mCamera.stopPreview();
 			stopPreviewAndFreeCamera();
 		}
+		Log.i(TAG, "surface destroyed");
 	}
 
 	/**
@@ -78,11 +83,11 @@ public class CameraPreview extends SurfaceView implements
 			mCamera = null;
 		}
 	}
-
+	
 	public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
 		// If your preview can change or rotate, take care of those events here.
 		// Make sure to stop the preview before resizing or reformatting it.
-
+		
 		if (mHolder.getSurface() == null) {
 			// preview surface does not exist
 			return;
@@ -95,6 +100,7 @@ public class CameraPreview extends SurfaceView implements
 			// ignore: tried to stop a non-existent preview
 		}
 
+		
 		// set preview size and make any resize, rotate or
 		// reformatting changes here
 
