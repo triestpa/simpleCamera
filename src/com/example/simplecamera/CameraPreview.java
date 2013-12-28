@@ -42,8 +42,14 @@ public class CameraPreview extends SurfaceView implements
 	public void surfaceCreated(SurfaceHolder holder) {
 		// The Surface has been created, now tell the camera where to draw the
 		// preview.
-		if (mCamera == null)
+		if (mCamera == null){
+			/* Sometimes the surface will be created BEFORE onResume is called.
+				This causes a crash, so we just return if mCamera is null, and surfaceCreated
+				will be called again during onResume */
 			Log.e(TAG, "camera is null");
+			return;
+		}
+		
 		
 		try {
 			mCamera.setPreviewDisplay(holder);

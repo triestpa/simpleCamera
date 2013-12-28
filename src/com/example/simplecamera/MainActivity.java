@@ -12,6 +12,7 @@ import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -20,12 +21,14 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 
 public class MainActivity extends Activity {
-	protected Camera mCamera = null;
+	protected static Camera mCamera = null;
 	private CameraPreview mPreview;
 	protected String TAG = "main activity";
 	public static final int MEDIA_TYPE_IMAGE = 1;
 	protected Boolean preview_active;
-	protected int cameraID = Camera.CameraInfo.CAMERA_FACING_FRONT;
+	protected static int cameraID = Camera.CameraInfo.CAMERA_FACING_BACK;
+	private Handler mHandler = new Handler();
+	protected String flashStatus = Camera.Parameters.FLASH_MODE_OFF;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +41,7 @@ public class MainActivity extends Activity {
 
 		setPictureButton();
 		setCameraSwapButton();
+		setFlashButton();
 	}
 
 	@Override
@@ -47,12 +51,12 @@ public class MainActivity extends Activity {
 		FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
 		preview.addView(mPreview);
 	}
-	
+
 	public void cameraInit(int camID) {
-		
+
 		mCamera = getCameraInstance(camID);
 		cameraID = camID;
-		
+
 		// Create our Preview view and set it as the content of our
 		// activity.
 		mPreview = new CameraPreview(this, mCamera);
@@ -72,6 +76,7 @@ public class MainActivity extends Activity {
 		// Add a listener to the Capture button
 		Button captureButton = (Button) findViewById(R.id.button_capture);
 		captureButton.setOnClickListener(new View.OnClickListener() {
+
 			@Override
 			public void onClick(View v) {
 				if (preview_active) {
@@ -79,21 +84,24 @@ public class MainActivity extends Activity {
 					mCamera.takePicture(null, null, mPicture);
 					preview_active = false;
 				} else {
+					// else reset to preview to take another pic
 					mCamera.stopPreview();
 					mCamera.startPreview();
 					preview_active = true;
 				}
 			}
+
 		});
 	}
 
 	public void setCameraSwapButton() {
 		// Add a listener to the Capture button
-		Button captureButton = (Button) findViewById(R.id.button_swap);
-		captureButton.setOnClickListener(new View.OnClickListener() {
+		Button swapButton = (Button) findViewById(R.id.button_swap);
+		swapButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
+				// must remove view before swapping it
 				preview.removeView(mPreview);
 
 				if (cameraID == Camera.CameraInfo.CAMERA_FACING_BACK) {
@@ -106,6 +114,40 @@ public class MainActivity extends Activity {
 				preview.addView(mPreview);
 			}
 		});
+	}
+
+	public void setFlashButton() {
+		// Add a listener to the Capture button
+		Button flashButton = (Button) findViewById(R.id.button_flash);
+		flashButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				toggleFlash();
+			}
+		});
+	}
+
+	public void toggleFlash() {
+		// get Camera parameters
+		Camera.Parameters params = mCamera.getParameters();
+		Button flashButton = (Button) findViewById(R.id.button_flash);
+
+		if (params.getFlashMode()
+				.contentEquals(Camera.Parameters.FLASH_MODE_ON)) {
+			// turn flash off
+			params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+			flashStatus = Camera.Parameters.FLASH_MODE_OFF; 
+			Log.i(TAG, "flash off");
+			flashButton.setText("Turn Flash On");
+		} else {
+			// turn flash on
+			params.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
+			Log.i(TAG, "flash on");
+			flashStatus = Camera.Parameters.FLASH_MODE_ON; 
+			flashButton.setText("Turn Flash Off");
+		}
+		// set Camera parameters
+		mCamera.setParameters(params);
 	}
 
 	/** A safe way to get an instance of the Camera object. */
@@ -127,15 +169,6 @@ public class MainActivity extends Activity {
 	protected void onPause() {
 		super.onPause();
 		// surfaceDestroyed in CameraPreview is automatically called here
-	}
-
-
-	private void releaseCamera() {
-		if (mCamera != null) {
-			mCamera.release(); // release the camera for other applications
-			mCamera = null;
-			Log.i("camera util", "camera released");
-		}
 	}
 
 	// This part is where the picture is actually taken
