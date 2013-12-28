@@ -107,6 +107,11 @@ public class MainActivity extends Activity {
 				if (cameraID == Camera.CameraInfo.CAMERA_FACING_BACK) {
 					// switch to front facing camera
 					cameraInit(Camera.CameraInfo.CAMERA_FACING_FRONT);
+					//the flash must be off if front camera is in use
+					flashStatus = Camera.Parameters.FLASH_MODE_OFF;
+					Log.i(TAG, "flash off");
+					Button flashButton = (Button) findViewById(R.id.button_flash);
+					flashButton.setText("Turn Flash On");
 				} else {
 					// switch to back facing camera
 					cameraInit(Camera.CameraInfo.CAMERA_FACING_BACK);
@@ -128,6 +133,11 @@ public class MainActivity extends Activity {
 	}
 
 	public void toggleFlash() {
+		// Not applicable if front facing camera is selected
+		if (cameraID == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+			return;
+		}
+
 		// get Camera parameters
 		Camera.Parameters params = mCamera.getParameters();
 		Button flashButton = (Button) findViewById(R.id.button_flash);
@@ -136,14 +146,14 @@ public class MainActivity extends Activity {
 				.contentEquals(Camera.Parameters.FLASH_MODE_ON)) {
 			// turn flash off
 			params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
-			flashStatus = Camera.Parameters.FLASH_MODE_OFF; 
+			flashStatus = Camera.Parameters.FLASH_MODE_OFF;
 			Log.i(TAG, "flash off");
 			flashButton.setText("Turn Flash On");
 		} else {
 			// turn flash on
 			params.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
 			Log.i(TAG, "flash on");
-			flashStatus = Camera.Parameters.FLASH_MODE_ON; 
+			flashStatus = Camera.Parameters.FLASH_MODE_ON;
 			flashButton.setText("Turn Flash Off");
 		}
 		// set Camera parameters
